@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title> NIU Bank × NIUM | Darshan Singh- Technical Pitch Deck </title>
+  <style>
+    /* --- Light Deck Theme (printable & screen) --- */
+    :root{
+      --bg:#f7fafc; --card:#ffffff; --ink:#0f172a; --sub:#475569; --muted:#64748b;
+      --brand:#1d4ed8; --ring:rgba(29,78,216,.18); --ok:#16a34a; --warn:#d97706; --bad:#dc2626;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    html,body{height:100%;background:var(--bg);color:var(--ink);font:16px/1.6 Inter,system-ui,Segoe UI,Roboto,Arial;margin:0}
+    a{color:var(--brand);text-decoration:none} a:hover{text-decoration:underline}
+    .deck{max-width:1120px;margin:0 auto;padding:28px}
+    header{margin:0 0 8px}
+    header h1{font-size:clamp(24px,3.6vw,40px);margin:0 0 6px}
+    header p{margin:0;color:var(--sub)}
+    .nav{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:16px 0 28px}
+    .nav a{background:var(--card);border:1px solid #e2e8f0;border-radius:14px;padding:10px 14px;box-shadow:0 1px 0 rgba(0,0,0,.02)}
+
+    .slide{background:var(--card);border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;margin:14px 0;box-shadow:0 8px 24px rgba(2,6,23,.04)}
+    .slide h2{margin:0;padding:14px 18px;border-bottom:1px solid #e2e8f0;background:linear-gradient(180deg,#fff,#f8fafc)}
+    .pad{padding:16px 18px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+    .kpi{background:#f8fafc;border:1px dashed #e2e8f0;border-radius:12px;padding:12px 14px}
+    .callout{border-left:4px solid var(--brand);background:#f1f5ff;border:1px solid var(--ring);border-radius:10px;padding:10px 12px}
+    .pill{display:inline-block;background:#eef2ff;border:1px solid #dbeafe;color:#1e3a8a;border-radius:8px;padding:2px 8px;font-size:12px}
+    pre{background:#0b1220;color:#e2e8f0;border-radius:12px;border:1px solid #0f172a22;padding:12px;overflow:auto}
+    code{font-family:var(--mono)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px 10px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+    th{text-align:left;color:var(--muted);font-weight:600}
+    details{border:1px solid #e2e8f0;border-radius:12px;background:#fbfdff;padding:8px 12px}
+    details+details{margin-top:10px}
+    summary{cursor:pointer;color:#0f172a}
+
+    /* Print as slides */
+    @media print{body{background:white} .nav{display:none} .slide{break-inside:avoid;page-break-inside:avoid;margin:18px 0}}
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <header>
+        <h1>NIU Bank × NIUM — Corporate Customers </h1>
+      <p>Darshan Singh • API Deck </p>
+    </header>
+
+    <nav class="nav">
+      <a href="#summary">0. Executive Summary</a>
+      <a href="#arch">1. Target Architecture (Corporate)</a>
+      <a href="#flows">2. Core Flow ▸ API Mapping</a>
+      <a href="#env">3. Environments & Auth</a>
+      <a href="#corp">4. Corporate Onboarding (KYB)</a>
+      <a href="#wallets">5. Wallets & Virtual Accounts</a>
+      <a href="#fx">6. FX Pricing & Conversion</a>
+      <a href="#payouts">7. Beneficiaries & Payouts</a>
+      <a href="#ops">8. Webhooks, Idempotency, Reconciliation</a>
+      <a href="#rollout">9. Rollout Plan, Risks</a>
+      <a href="#appendix">10. Appendix: cURL Samples</a>
+    </nav>
+
+    <section id="summary" class="slide">
+      <h2>0. Executive Summary</h2>
+      <div class="pad grid">
+        <div class="kpi"><strong>Bank Problem</strong><br/>High SWIFT fees & delayed settlement for corporates; opaque status & FX costs.</div>
+        <div class="kpi"><strong>Our Answer</strong><br/>Use NIUM corporate stack only: <em>KYB → corporate wallets → locked FX → local payouts</em> with real‑time events.</div>
+        <div class="kpi"><strong>Impact</strong><br/>Faster delivery via local rails, lower costs, predictable FX, auditability, and prefund‑based liquidity control.</div>
+      </div>
+    </section>
+
+    <section id="arch" class="slide">
+      <h2>1. Target Architecture (Corporate)</h2>
+      <div class="pad">
+        <div class="callout"><strong>Flow:</strong> Bank Channels → <em>Integration Layer</em> (API GW/Orchestrator) → NIUM (Corporate KYB, Wallets, FX, Payouts) → Local rails/SWIFT → Webhooks back to bank systems.</div>
+        <pre aria-label="ASCII diagram">Enterprise Channels (Corporate Portal/API)
+  │
+  ▼
+Bank Integration Layer (API Gateway + Orchestration)
+  ├─ Corporate Onboarding Service (KYB, RFIs, Docs)
+  ├─ Wallet & Treasury (Prefund, Balances, Virtual Accounts)
+  ├─ FX Service (Rates/Quotes/Conversions)
+  ├─ Payout Service (Beneficiaries/Remittance/Audit)
+  ├─ Webhooks Receiver → Event Bus → Core Systems
+  └─ Reconciliation & Reporting
+  │
+  ▼
+NIUM REST Platform (Corporate‑only endpoints)</pre>
+        <div class="grid">
+          <div class="kpi"><strong>Security</strong><br/>X‑Api‑Key, TLS, per‑request <code>x-request-id</code>, idempotent writes, secrets in vault.</div>
+          <div class="kpi"><strong>Data</strong><br/>Store tokens & references (customerHashId, walletHashId, systemReferenceNumber). Documents pass‑through to NIUM.</div>
+          <div class="kpi"><strong>Compliance</strong><br/>Region‑aware onboarding (AU/EU/UK/SG/US/CA); RFIs; terms & conditions; sanction screening by NIUM.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="flows" class="slide">
+      <h2>2. Core Flow ▸ API Mapping (Corporate Only)</h2>
+      <div class="pad">
+        <ol>
+          <li><strong>Prefund Liquidity</strong> → <span class="pill">POST /client/{clientHashId}/prefund</span> · <span class="pill">GET /client/{clientHashId}/balances</span></li>
+          <li><strong>Corporate KYB</strong> → <span class="pill">POST /v1/client/{clientHashId}/corporate</span> → handle <span class="pill">GET/POST /corporate/rfi</span> → <span class="pill">POST /customer/{customerHashId}/corporate/documents</span></li>
+          <li><strong>Onboarding Forms (Hosted)</strong> → <span class="pill">POST /v1/client/{clientHashId}/applications</span> · regenerate & track sections</li>
+          <li><strong>Wallets & Virtual Accounts</strong> → <span class="pill">POST /customer/{customerHashId}/wallet</span> · <span class="pill">/wallet/{walletHashId}/paymentId</span></li>
+          <li><strong>FX</strong> → <span class="pill">GET /v2/exchangeRate</span> or <span class="pill">POST /quotes</span> → <span class="pill">POST /.../conversions</span></li>
+          <li><strong>Beneficiary + Payout</strong> → <span class="pill">POST /v2/.../beneficiaries</span> → <span class="pill">/beneficiaries/validate</span> → <span class="pill">POST /.../remittance</span> → <span class="pill">GET /.../audit</span></li>
+          <li><strong>Ops & Reco</strong> → <span class="pill">GET /client/{clientHashId}/transactions</span> and statements + webhooks.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="env" class="slide">
+      <h2>3. Environments & Auth</h2>
+      <div class="pad">
+        <table>
+          <tr><th>Base URL</th><td><code>https://gateway.nium.com</code></td></tr>
+          <tr><th>Auth</th><td><code>X-Api-Key: &lt;secret&gt;</code> per client; include <code>x-request-id</code> (UUID) each call for tracing/idempotency keys.</td></tr>
+          <tr><th>Headers</th><td><code>Content-Type: application/json</code></td></tr>
+          <tr><th>Identifiers</th><td><code>clientHashId</code>, <code>customerHashId</code>, <code>walletHashId</code>, <code>systemReferenceNumber</code></td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section id="corp" class="slide">
+      <h2>4. Corporate Onboarding (KYB)</h2>
+      <div class="pad">
+        <details open>
+          <summary>4.1 Corporate Lookup & Constants</summary>
+          <ul>
+            <li><span class="pill">GET /v1/client/{clientHashId}/corporate/lookup</span> (by BRN + country)</li>
+            <li><span class="pill">GET /v2/client/{clientHashId}/onboarding/constants</span> (region/category/type=CORPORATE)</li>
+          </ul>
+        </details>
+        <details open>
+          <summary>4.2 Onboard Corporate</summary>
+          <ul>
+            <li><span class="pill">POST /v1/client/{clientHashId}/corporate</span> → returns <code>customerHashId</code>, KYB URLs.</li>
+            <li>Handle RFIs: <span class="pill">GET/POST /v1/client/{clientHashId}/corporate/rfi</span></li>
+            <li>Upload docs: <span class="pill">POST /v1/client/{clientHashId}/customer/{customerHashId}/corporate/documents</span></li>
+            <li>Hosted onboarding (optional): <span class="pill">POST /v1/client/{clientHashId}/applications</span></li>
+          </ul>
+        </details>
+      </div>
+    </section>
+
+    <section id="wallets" class="slide">
+      <h2>5. Wallets & Virtual Accounts (Corporate)</h2>
+      <div class="pad">
+        <ul>
+          <li>Create/Fetch wallets: <span class="pill">POST/GET /customer/{customerHashId}/wallet</span></li>
+          <li>Assign VANs: <span class="pill">POST /wallet/{walletHashId}/paymentId</span> · <span class="pill">GET /wallet/{walletHashId}/paymentIds</span></li>
+          <li>Balances & statements: <span class="pill">GET /wallet</span> · <span class="pill">GET /.../statement</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="fx" class="slide">
+      <h2>6. FX Pricing & Conversion</h2>
+      <div class="pad grid">
+        <div class="kpi"><strong>Pricing</strong><br/><span class="pill">GET /v2/exchangeRate</span> (display/historic)</div>
+        <div class="kpi"><strong>Lock & Convert</strong><br/><span class="pill">POST /client/{clientHashId}/quotes</span> → <span class="pill">POST /.../conversions</span></div>
+        <div class="kpi"><strong>Treasury Controls</strong><br/>Use quotes for high‑value; re‑price on expiry; policy on spreads.</div>
+      </div>
+    </section>
+
+    <section id="payouts" class="slide">
+      <h2>7. Beneficiaries & Payouts</h2>
+      <div class="pad">
+        <ul>
+          <li><strong>Reference & Validation</strong> → <span class="pill">GET /v2/client/{clientHashId}/supportedCorridors</span> · <span class="pill">GET /.../validationSchemas</span> · <span class="pill">POST /.../beneficiaries/validate</span></li>
+          <li><strong>Create Beneficiary</strong> → <span class="pill">POST /v2/.../beneficiaries</span></li>
+          <li><strong>Send Remittance</strong> → <span class="pill">POST /.../wallet/{walletHashId}/remittance</span> → track <span class="pill">GET /.../remittance/{systemReferenceNumber}/audit</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="ops" class="slide">
+      <h2>8. Webhooks, Idempotency, Reconciliation</h2>
+      <div class="pad">
+        <ul>
+          <li><strong>Webhooks</strong>: configure at client level; receive onboarding status, wallet credits, remittance transitions → event bus → UI updates.</li>
+          <li><strong>Idempotency</strong>: stable key per create/convert/remit (combine <code>x-request-id</code> + business key).</li>
+          <li><strong>Transactions</strong>: <span class="pill">GET /api/v1/client/{clientHashId}/transactions</span> for reporting & audit.</li>
+          <li><strong>Errors</strong>: 400/401/403/404/409/500; log <code>systemReferenceNumber</code> and <code>x-request-id</code>.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="rollout" class="slide">
+      <h2>9. Rollout Plan & Risks</h2>
+      <div class="pad grid">
+        <div class="kpi"><strong>Phase 0 — Enablement</strong><br/>API keys, webhook endpoints, corridors, fee plan, sandbox VANs.</div>
+        <div class="kpi"><strong>Phase 1 — Treasury</strong><br/>Prefund workflow & alerts; balances API; liquidity guardrails.</div>
+        <div class="kpi"><strong>Phase 2 — KYB</strong><br/>Corporate onboarding, RFIs, document uploads, hosted forms.</div>
+        <div class="kpi"><strong>Phase 3 — Wallets & FX</strong><br/>Wallet issuance, VANs, quotes→conversions.</div>
+        <div class="kpi"><strong>Phase 4 — Payouts</strong><br/>Beneficiaries, validation, remittance, audit trail.</div>
+        <div class="kpi"><strong>Phase 5 — Reco</strong><br/>Client transactions, statements, exception handling.</div>
+      </div>
+      <div class="pad">
+        <table>
+          <tr><th>Risk</th><th>Mitigation</th></tr>
+          <tr><td>Insufficient prefund</td><td>Forecasting + low‑balance alerts; intraday top‑ups.</td></tr>
+          <tr><td>RFI cycle time</td><td>Pre‑validate with constants; SLA dashboards; webhook tasks.</td></tr>
+          <tr><td>FX slippage</td><td>Use locked quotes for large tickets; automatic re‑price on expiry.</td></tr>
+          <tr><td>Payout rejects</td><td>Use validationSchemas, account verification, reference data search.</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section id="appendix" class="slide">
+      <h2>10. Appendix: cURL Samples (Corporate Only)</h2>
+      <div class="pad">
+<pre># Prefund
+curl -X POST "$BASE/api/v1/client/$CLIENT/prefund" \
+  -H 'Content-Type: application/json' -H "X-Api-Key: $API_KEY" -H "x-request-id: $(uuidgen)" \
+  -d '{"amount":1000,"currencyCode":"SGD","bankReferenceNumber":"BRN123","dateOfTransfer":"2025-09-01","niumAccountNumber":"133876812367","clientAccountNumber":"615234671328","requesterId":"ops"}'
+
+# Corporate onboarding → RFIs → Docs
+curl -X POST "$BASE/api/v1/client/$CLIENT/corporate" -H 'Content-Type: application/json' -H "X-Api-Key: $API_KEY" -d '{"businessDetails":{...}}'
+curl "$BASE/api/v1/client/$CLIENT/corporate/rfi?customerHashId=$CUST&region=SG" -H "X-Api-Key: $API_KEY"
+curl -X POST "$BASE/api/v1/client/$CLIENT/customer/$CUST/corporate/documents" -H 'Content-Type: application/json' -H "X-Api-Key: $API_KEY" -d '{"businessDetails":{...},"region":"SG"}'
+
+# Hosted forms
+curl -X POST "$BASE/api/v1/client/$CLIENT/applications" -H 'Content-Type: application/json' -H "X-Api-Key: $API_KEY" -d '{"customerHashId":"'$CUST'"}'
+
+# Wallets & VANs
+curl -X POST "$BASE/api/v1/client/$CLIENT/customer/$CUST/wallet" -H 'Content-Type: application/json' -H "X-Api-Key: $API_KEY" -d '{"currency":"SGD"}'
+curl -X POST "$BASE/api/v1/client/$CLIENT/customer/$CUST/wallet/$WAL/paymentId" -H 'Content-Type: application/json' -H "X-Api-Key: $API_KEY" -d '{"currency":"SGD"}'
+
+# FX
+curl "$BASE/api/v2/exchangeRate?source=USD&destination=INR" -H "X-Api-Key: $API_KEY"
+curl -X POST "$BASE/api/v1/client/$CLIENT/quotes" -H 'Content-Type: application/json' -H "X-Api-Key: $API_KEY" -d '{"source":"USD","destination":"INR","amount":10000}'
+
+# Beneficiary + Payout
+curl -X POST "$BASE/api/v2/client/$CLIENT/customer/$CUST/beneficiaries" -H 'Content-Type: application/json' -H "X-Api-Key: $API_KEY" -d '{...}'
+curl -X POST "$BASE/api/v1/client/$CLIENT/customer/$CUST/wallet/$WAL/remittance" -H 'Content-Type: application/json' -H "X-Api-Key: $API_KEY" -d '{"beneficiaryHashId":"'$BEN'","amount":1000,"currency":"INR"}'
+
+# Audit & Transactions
+curl "$BASE/api/v1/client/$CLIENT/customer/$CUST/wallet/$WAL/remittance/$SRN/audit" -H "X-Api-Key: $API_KEY"
+curl "$BASE/api/v1/client/$CLIENT/transactions?startDate=2025-08-01&endDate=2025-09-08" -H "X-Api-Key: $API_KEY"
+</pre>
+      </div>
+    </section>
+
+    <footer class="pad" style="text-align:center;color:var(--muted)">
+      © 2025 — Corporate‑only deck for NIUM interview (Darshan). Built as a single‑file HTML deck for printing or screen‑share.
+    </footer>
+  </div>
+</body>
+</html>
